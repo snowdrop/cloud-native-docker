@@ -20,7 +20,7 @@
   rm -rf target/*-1.0.jar
   ```
   
-- A buildConfig resource is created to process the local Dockerfile and build the docker image of the app
+- A. A buildConfig resource is created to process the local Dockerfile and build the docker image of the app
   ```bash
   oc new-build --binary --strategy=docker --name=docker-build -l app=ocp-docker-build
   oc start-build docker-build --from-dir=. --follow
@@ -37,6 +37,32 @@
   oc delete dc,bc,is,svc docker-build
   or
   oc delete all -l app=ocp-docker-build 
+  ```
+  
+- B. The user will build the docker image and push it to the OpenShift docker registry 
+
+- We compile the project to generate the uberjar file
+
+  ```bash
+  mvn clean package
+  rm -rf target/*-1.0.jar
+  ```
+
+- The user must be able to access the OpenShift docker daemon and be logged 
+  ```bash
+  eval $(minishift docker-env)
+  docker login -u admin -p $(oc whoami -t) $(minishift openshift registry)
+  ```
+  
+- Build the docker image and push it  
+  ```bash
+  docker build -t $(minishift openshift registry)/ocp-docker-build-install/spring-boot-http:1.0 .
+  docker push $(minishift openshift registry)/ocp-docker-build-install/spring-boot-http:1.0
+  ```
+  
+- The application is created on the cloud platform
+  ```bash
+  oc new-app --name=docker-build -i ocp-docker-build-install/spring-boot-http:1.0 -l app=ocp-docker-build  
   ```
   
 # Using generated/static files
